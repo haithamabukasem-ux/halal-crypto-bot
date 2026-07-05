@@ -26,13 +26,11 @@ def is_symbol_allowed(symbol: str) -> bool:
            return False
        return True
 
-
 def run():
     print("🚀 بدء تشغيل بوت الإشارات (Spot / بدون تنفيذ تلقائي)...")
     all_symbols = get_all_usdt_symbols()
-   symbols = [s for s in all_symbols if is_symbol_allowed(s)]
+    symbols = [s for s in all_symbols if is_symbol_allowed(s)]
 
-    # حالة الصفقات المفتوحة حالياً (لكل عملة نتابعها لوقف الخسارة، ونمنع تكرار الإشارة)
     open_positions = {}   # symbol -> {"stop_loss_level": float, "entry_price": float}
 
     while True:
