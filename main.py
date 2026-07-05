@@ -17,21 +17,20 @@ import time
 import traceback
 
 import config
-from data_fetcher import get_klines
+from data_fetcher import get_klines, get_all_usdt_symbols
 import strategy
 import telegram_notifier
 
-
 def is_symbol_allowed(symbol: str) -> bool:
-    if any(bad in symbol for bad in config.EXCLUDE_KEYWORDS):
-        return False
-    return symbol in config.HALAL_SCREENED_SYMBOLS
+       if any(bad in symbol for bad in config.EXCLUDE_KEYWORDS):
+           return False
+       return True
 
 
 def run():
     print("🚀 بدء تشغيل بوت الإشارات (Spot / بدون تنفيذ تلقائي)...")
-    symbols = [s for s in config.HALAL_SCREENED_SYMBOLS if is_symbol_allowed(s)]
-    print(f"العملات المراقَبة ({len(symbols)}): {symbols}")
+    all_symbols = get_all_usdt_symbols()
+   symbols = [s for s in all_symbols if is_symbol_allowed(s)]
 
     # حالة الصفقات المفتوحة حالياً (لكل عملة نتابعها لوقف الخسارة، ونمنع تكرار الإشارة)
     open_positions = {}   # symbol -> {"stop_loss_level": float, "entry_price": float}
