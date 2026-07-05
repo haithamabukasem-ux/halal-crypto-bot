@@ -33,7 +33,7 @@ def format_entry_message(signal) -> str:
         f"🎯 الهدف الأول (2%): <code>{signal.take_profit_1:.6g}</code>\n"
         f"🛑 مستوى وقف الخسارة (تأكيد بإغلاق شمعة 4 ساعات تحته): "
         f"<code>{signal.stop_loss_level:.6g}</code>\n\n"
-        f"📊 سبب الإشارة:\n{signal.reason}\n\n"
+        
         f"⚠️ هذه إشارة اجتهادية وليست توصية مضمونة. الرجاء إدارة رأس المال "
         f"بحجم مناسب لا يتجاوز ما تتحمل خسارته."
     )
