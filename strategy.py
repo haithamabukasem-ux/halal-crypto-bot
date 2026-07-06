@@ -2,19 +2,7 @@
 """
 منطق توليد الإشارات.
 
-فكرة الاستراتيجية (بسيطة، منضبطة، وقابلة للتفسير الكامل - لا "صندوق أسود"):
-1) الاتجاه العام على فريم 4 ساعات: EMA21 فوق EMA50  => الاتجاه صاعد (نبحث عن شراء فقط)
-2) الدخول على فريم ساعة: RSI يخرج من تشبع بيعي (يعبر فوق 35 صعوداً)
-   + تقاطع MACD إيجابي (macd يعبر فوق خط الإشارة)
-   + السعر قريب من دعم EMA50 على فريم الساعة (منطقة قيمة، وليس ملاحقة للسعر)
-3) الهدف الأول: 2% من سعر الدخول
-4) وقف الخسارة: ليس نقطة سعرية تُفعّل لحظياً، بل "تأكيد إغلاق شمعة 4 ساعات"
-   تحت أدنى نقطة الشمعة المرجعية (لتفادي الخروج بسبب فتيل عابر/تقلب لحظي).
-   البوت يراقب باستمرار، وعندما تُغلق شمعة 4 ساعات فعلياً تحت مستوى الإبطال،
-   يرسل تنبيه "تفعيل وقف الخسارة" فوراً.
-
-هذا النظام لا يدّعي دقة 100% (لا توجد استراتيجية كذلك)، لكنه منطقي،
-قابل للتبرير الفني الكامل، ومحكوم بإدارة مخاطر واضحة.
+تم تقسيم الملف إلى استراتيجيتين منفصلتين تماماً لتعملا بالتوازي دون أي تداخل.
 """
 
 from dataclasses import dataclass
@@ -34,7 +22,10 @@ class Signal:
     reason: str
 
 
-def analyze_symbol(symbol: str, df_4h, df_1h) -> Optional[Signal]:
+def analyze_strategy_old(symbol: str, df_4h, df_1h) -> Optional[Signal]:
+    """
+    الاستراتيجية الأولى (القديمة): دمج فريم 4 ساعات وفريم الساعة (EMA + RSI + MACD)
+    """
     if len(df_4h) < config.EMA_SLOW + 5 or len(df_1h) < config.EMA_SLOW + 5:
         return None
 
@@ -63,7 +54,7 @@ def analyze_symbol(symbol: str, df_4h, df_1h) -> Optional[Signal]:
     # 2) شرط الدخول على فريم الساعة
     rsi_recovering = prev_1h["rsi"] < config.RSI_OVERSOLD <= last_1h["rsi"]
     macd_cross_up = (prev_1h["macd"] <= prev_1h["macd_signal"]
-                      and last_1h["macd"] > last_1h["macd_signal"])
+                     and last_1h["macd"] > last_1h["macd_signal"])
     near_support = last_1h["close"] <= last_1h["ema_slow"] * 1.01  # قريب من EMA50 (ضمن 1%)
     not_overbought = last_1h["rsi"] < config.RSI_OVERBOUGHT
 
@@ -77,7 +68,6 @@ def analyze_symbol(symbol: str, df_4h, df_1h) -> Optional[Signal]:
     stop_loss_level = float(closed_4h["low"]) * (1 - config.SL_BUFFER_PCT)
 
     if stop_loss_level >= entry_price:
-        # لو المستوى غير منطقي (نادر) نتجاهل الإشارة لحماية المستخدم
         return None
 
     reason = (
@@ -96,9 +86,19 @@ def analyze_symbol(symbol: str, df_4h, df_1h) -> Optional[Signal]:
     )
 
 
+def analyze_strategy_new(symbol: str, df_4h) -> Optional[Signal]:
+    """
+    الاستراتيجية الثانية (الجديدة): تعتمد على فريم 4 ساعات (السيولة والارتداد)
+    ملاحظة: حالياً تعيد None مؤقتاً لكي يقلع البوت على Railway بدون أخطاء،
+    وسنقوم بكتابة شروطها بالكامل في الخطوة القادمة.
+    """
+    # TODO: هنا سنضع شروط السيولة والارتداد الخاصة بك
+    return None
+
+
 def check_stop_loss_hit(symbol: str, df_4h, stop_loss_level: float) -> bool:
     """
-    يتحقق مما إذا كانت آخر شمعة 4 ساعات (المغلقة فعلياً) قد أغلقت
+    تحقق مما إذا كانت آخر شمعة 4 ساعات (المغلقة فعلياً) قد أغلقت
     تحت مستوى وقف الخسارة المرجعي => يعني تفعيل الخروج.
     """
     closed = df_4h[df_4h["is_closed"]]
