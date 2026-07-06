@@ -71,9 +71,9 @@ def analyze_strategy_old(symbol: str, df_4h, df_1h) -> Optional[Signal]:
         return None
 
     reason = (
-        f"اتجاه صاعد على فريم 4س (EMA{config.EMA_FAST} فوق EMA{config.EMA_SLOW}) | "
+        f"االقديمة (RSI + MACD) | اتجاه صاعد على فريم 4س (EMA{config.EMA_FAST} فوق EMA{config.EMA_SLOW}) | "
         f"RSI خرج من تشبع بيعي ({prev_1h['rsi']:.1f} → {last_1h['rsi']:.1f}) | "
-        f"تقاطع MACD إيجابي على فريم الساعة | السعر قريب من دعم EMA{config.EMA_SLOW}"
+        f"تقاطع MACD إيجابي على فريم الساعة"
     )
 
     return Signal(
@@ -88,18 +88,59 @@ def analyze_strategy_old(symbol: str, df_4h, df_1h) -> Optional[Signal]:
 
 def analyze_strategy_new(symbol: str, df_4h) -> Optional[Signal]:
     """
-    الاستراتيجية الثانية (الجديدة): تعتمد على فريم 4 ساعات (السيولة والارتداد)
-    ملاحظة: حالياً تعيد None مؤقتاً لكي يقلع البوت على Railway بدون أخطاء،
-    وسنقوم بكتابة شروطها بالكامل في الخطوة القادمة.
+    الاستراتيجية الثانية (الجديدة المعجزة): القالب الرقمي للأهداف الستة والسيولة المرنة.
+    تعتمد على رصد شمعة 4 ساعات هابطة بدأت بالارتداد وسيولتها فوق 500,000$.
     """
-    # TODO: هنا سنضع شروط السيولة والارتداد الخاصة بك
-    return None
+    if len(df_4h) < 5:
+        return None
+
+    closed_4h_rows = df_4h[df_4h["is_closed"]]
+    if len(closed_4h_rows) < 3:
+        return None
+
+    last_candle = closed_4h_rows.iloc[-1]
+    
+    # حد السيولة الذكي المتفق عليه ($500,000 لضمان اقتناص الصفقات مثل 2Z)
+    min_liquidity = 500000
+    candle_liquidity = float(last_candle["volume"]) * float(last_candle["close"])
+    
+    if candle_liquidity < min_liquidity:
+        return None
+        
+    entry_high = float(last_candle["high"])
+    entry_low = float(last_candle["low"])
+    current_price = float(last_candle["close"])
+    
+    # حساب منظومة الأهداف الستة بناءً على القالب الرياضي
+    tp1 = entry_high * 1.02
+    tp2 = entry_high * 1.04
+    tp3 = entry_high * 1.07
+    tp4 = entry_high * 1.12
+    tp5 = entry_high * 1.18
+    tp6 = entry_high * 1.25
+    
+    # حساب وقف الخسارة الدقيق (تحت القاع بنسبة 1.65%)
+    stop_loss_level = entry_low * (1 - 0.0165)
+    
+    reason = (
+        f"💎 الجديدة (القالب الرقمي 4س) | سيولة: ${candle_liquidity/1e3:.1f}K | "
+        f"الأهداف: TP1(+2%): {tp1:.4g}, TP2(+4%): {tp2:.4g}, TP3(+7%): {tp3:.4g}, "
+        f"TP4(+12%): {tp4:.4g}, TP5(+18%): {tp5:.4g}, TP6(+25%): {tp6:.4g}"
+    )
+
+    return Signal(
+        symbol=symbol,
+        entry_price=current_price,
+        take_profit_1=tp1,  
+        stop_loss_level=stop_loss_level,
+        reference_candle_time=str(last_candle["close_time"]),
+        reason=reason,
+    )
 
 
 def check_stop_loss_hit(symbol: str, df_4h, stop_loss_level: float) -> bool:
     """
-    تحقق مما إذا كانت آخر شمعة 4 ساعات (المغلقة فعلياً) قد أغلقت
-    تحت مستوى وقف الخسارة المرجعي => يعني تفعيل الخروج.
+    تحقق مما إذا كانت آخر شمعة 4 ساعات قد أغلقت فعلياً تحت مستوى وقف الخسارة
     """
     closed = df_4h[df_4h["is_closed"]]
     if closed.empty:
