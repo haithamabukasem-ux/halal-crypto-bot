@@ -46,3 +46,13 @@ def format_stop_loss_message(symbol: str, stop_loss_level: float) -> str:
         f"أُغلقت شمعة 4 ساعات تحت مستوى: <code>{stop_loss_level:.6g}</code>\n"
         f"يُنصح بالخروج من الصفقة أو مراجعتها فوراً."
     )
+
+def format_take_profit_message(symbol: str, entry_price: float, current_price: float) -> str:
+    pnl_pct = (current_price - entry_price) / entry_price * 100
+    return (
+        f"🎯 <b>تحقق الهدف - ربح {pnl_pct:.1f}%</b>\n"
+        f"العملة: <b>{symbol}</b>\n"
+        f"سعر الدخول: <code>{entry_price:.6g}</code>\n"
+        f"السعر الحالي: <code>{current_price:.6g}</code>\n\n"
+        f"✅ ممكن تجني الأرباح الآن أو تراقب الصفقة براحتك."
+    )
