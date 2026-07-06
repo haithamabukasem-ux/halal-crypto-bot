@@ -22,7 +22,7 @@ def run():
     while True:
         for symbol in symbols:
             try:
-                # سحب البيانات للفريمات المطلوبة
+                # سحب البيانات للفريمات المطلوبة بشكل صحيح ونظيف
                 df_4h = get_klines(symbol, config.TREND_TIMEFRAME)
                 df_1h = get_klines(symbol, config.ENTRY_TIMEFRAME)
                 
@@ -30,17 +30,15 @@ def run():
                 if symbol in open_positions:
                     sl_level = open_positions[symbol]["stop_loss_level"]
                     if strategy.check_stop_loss_hit(symbol, df_4h, sl_level):
-                        msg = strategy.format_stop_loss_message(symbol, sl_level)
-                        telegram_notifier.send_message(msg)
-                        print(f"❌ [{symbol}] تم تفعيل وقف الخسارة.")
+                        # هنا نقوم بمسح الصفقة لإتاحة استقبال إشارات جديدة لها لاحقاً
+                        print(f"❌ [{symbol}] تم تفعيل وقف الخسارة بناءً على إغلاق شمعة 4س.")
                         del open_positions[symbol]
                     continue
 
                 # 2 --- الفحص بالاستراتيجية الأولى (القديمة: المؤشرات)
                 signal_old = strategy.analyze_strategy_old(symbol, df_4h, df_1h)
                 if signal_old:
-                    msg = strategy.format_entry_message(signal_old)
-                    telegram_notifier.send_message(msg)
+                    telegram_notifier.send_message(signal_old.reason)
                     open_positions[symbol] = {
                         "stop_loss_level": signal_old.stop_loss_level,
                         "strategy": "old"
@@ -52,8 +50,7 @@ def run():
                 # 3 --- الفحص بالاستراتيجية الثانية (الجديدة: القالب الرقمي والسيولة)
                 signal_new = strategy.analyze_strategy_new(symbol, df_4h)
                 if signal_new:
-                    msg = strategy.format_entry_message(signal_new)
-                    telegram_notifier.send_message(msg)
+                    telegram_notifier.send_message(signal_new.reason)
                     open_positions[symbol] = {
                         "stop_loss_level": signal_new.stop_loss_level,
                         "strategy": "new"
