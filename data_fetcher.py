@@ -50,3 +50,9 @@ def get_all_usdt_symbols():
                 and s.get("isSpotTradingAllowed", True)):
             symbols.append(s["symbol"])
     return symbols
+    def get_current_price(symbol: str) -> float:
+    """يرجع السعر اللحظي الحالي للعملة (Spot)."""
+    url = f"{BINANCE_BASE_URL}/api/v3/ticker/price"
+    resp = requests.get(url, params={"symbol": symbol}, timeout=10)
+    resp.raise_for_status()
+    return float(resp.json()["price"])
