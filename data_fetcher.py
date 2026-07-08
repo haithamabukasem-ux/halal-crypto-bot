@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""جلب بيانات الشموع من واجهة Binance العامة - بدون مفتاح API."""
+"""جلب بيانات الشموع (Klines) من واجهة Binance العامة - بدون مفتاح API."""
 
 import time
 import requests
@@ -31,19 +31,6 @@ def get_klines(symbol: str, interval: str, limit: int = 300) -> pd.DataFrame:
 
     return df[["open_time", "open", "high", "low", "close", "volume",
                "close_time", "is_closed"]]
-
-
-def get_all_usdt_symbols():
-    url = f"{BINANCE_BASE_URL}/api/v3/exchangeInfo"
-    resp = requests.get(url, timeout=15)
-    resp.raise_for_status()
-    data = resp.json()
-    symbols = []
-    for s in data["symbols"]:
-        if (s["quoteAsset"] == "USDT" and s["status"] == "TRADING"
-                and s.get("isSpotTradingAllowed", True)):
-            symbols.append(s["symbol"])
-    return symbols
 
 
 def get_current_price(symbol: str) -> float:
